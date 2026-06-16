@@ -1,0 +1,69 @@
+substitutions:
+  devicename: "esp-ir" #Rename the device what you want.
+  upper_devicename: ESP IR #Rename the device what you want.
+
+esphome:
+  name: $devicename
+  friendly_name: $upper_devicename
+
+esp8266:
+  board: esp12e
+
+logger:
+  level: INFO
+
+api:
+
+ota:
+  - platform: esphome
+  
+wifi:
+  power_save_mode: NONE
+  output_power: 10
+  networks:
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+
+  ap:
+    ssid: $devicename
+    password: !secret wifi_password
+
+
+captive_portal:
+
+#---------------------------------------------------------
+# INFRARED RECEIVER
+#---------------------------------------------------------
+remote_receiver:
+  id: ir_receiver
+  pin:
+    number: GPIO14 
+    inverted: true
+  dump: pronto
+  on_pronto:
+    then:
+      - homeassistant.event:
+          event: esphome.remote_received
+          data:
+            protocol: "PRONTO"
+            code: !lambda 'return x.data;'
+
+#---------------------------------------------------------
+# INFRARED TRANSMITTER
+#---------------------------------------------------------
+remote_transmitter:
+  pin: GPIO4
+  carrier_duty_percent: 50%
+  id: ir_transmitter
+
+
+#---------------------------------------------------------
+# EXPOSED IR
+#---------------------------------------------------------
+infrared:
+  - platform: ir_rf_proxy
+    name: "IR Transmitter"
+    remote_transmitter_id: ir_transmitter
+#   - platform: ir_rf_proxy
+#     name: "IR Receiver"
+#     remote_receiver_id: ir_receiver
